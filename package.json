@@ -1,0 +1,9 @@
+{
+  "name": "driftglass",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/parity.mjs",
+    "build": "node tools/build-web.mjs"
+  }
+}

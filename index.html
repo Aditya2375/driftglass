@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta
+      name="description"
+      content="A Monte Carlo stock-model laboratory. Compare simulated paths with exact lognormal answers, and separate sampling noise from model risk."
+    />
+    <title>driftglass / a distribution, not a prediction</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="src/app.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#lab">Skip to simulator</a>
+    <header>
+      <a href="#" class="wordmark"
+        >driftglass<span aria-hidden="true"> ▥</span></a
+      ><span>PROBABILITY / NOTEBOOK 01</span
+      ><span class="status">OFFLINE MODEL · NO MARKET FEED</span>
+    </header>
+    <main>
+      <section class="intro">
+        <p class="eyebrow">MONTE CARLO STOCK SIMULATOR</p>
+        <h1>A distribution,<br />not a prediction.</h1>
+        <p class="lede">
+          One starting price. Thousands of possible paths. Change the
+          assumptions and watch the answers change.
+        </p>
+        <p class="warning">
+          These are generated geometric Brownian motion scenarios, not stock
+          forecasts. No historical data is used or fitted.
+        </p>
+      </section>
+      <section id="lab" class="lab" aria-labelledby="lab-title">
+        <div class="controls">
+          <p class="eyebrow">01 / SET THE ASSUMPTIONS</p>
+          <h2 id="lab-title">Build a world.</h2>
+          <p>
+            Annual rates in percent. Arbitrary price units, with no ticker or
+            currency.
+          </p>
+          <form id="settings" novalidate>
+            <label
+              >Starting price
+              <input
+                id="start"
+                name="start"
+                type="text"
+                inputmode="decimal"
+                value="100"
+                maxlength="16"
+              /><small>1 to 10,000 units</small></label
+            >
+            <label
+              >Annual drift μ (%)
+              <input
+                id="drift"
+                name="drift"
+                type="text"
+                inputmode="decimal"
+                value="8"
+                maxlength="16"
+              /><small
+                >-20 to 30 · mean growth rate, not log return</small
+              ></label
+            >
+            <label
+              >Annual volatility σ (%)
+              <input
+                id="volatility"
+                name="volatility"
+                type="text"
+                inputmode="decimal"
+                value="25"
+                maxlength="16"
+              /><small>0 to 80 · log-return diffusion scale</small></label
+            >
+            <label
+              >Horizon
+              <select id="months" name="months">
+                <option value="12">1 year / 12 months</option>
+                <option value="36" selected>3 years / 36 months</option>
+                <option value="60">5 years / 60 months</option>
+                <option value="120">10 years / 120 months</option>
+              </select></label
+            >
+            <label
+              >Simulated paths
+              <select id="paths" name="paths">
+                <option>100</option>
+                <option>500</option>
+                <option>1000</option>
+                <option selected>5000</option>
+                <option>10000</option>
+              </select></label
+            >
+            <label
+              >Random seed
+              <input
+                id="seed"
+                name="seed"
+                type="text"
+                inputmode="numeric"
+                value="1729"
+                maxlength="10"
+              /><small
+                >1 to 2,147,483,646 · same seed, same sample</small
+              ></label
+            >
+            <button type="submit" id="run">
+              Run simulation <span aria-hidden="true">↗</span></button
+            ><button class="quiet" type="button" id="reset">
+              Reset assumptions
+            </button>
+          </form>
+          <p id="error" role="alert" hidden></p>
+          <p class="local">
+            All computation stays in this page. Nothing is sent or saved.
+          </p>
+        </div>
+        <div class="results">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">02 / OBSERVE THE SPREAD</p>
+              <h2>Many paths. One model.</h2>
+            </div>
+            <span id="run-state" role="status" aria-live="polite"></span>
+          </div>
+          <p id="applied" class="applied"></p>
+          <div class="legend">
+            <span><i class="band"></i>Simulated 5th-95th percentiles</span
+            ><span><i class="line"></i>Simulated median</span
+            ><span><i class="exact"></i>Exact model percentiles</span>
+          </div>
+          <canvas
+            id="fan"
+            height="360"
+            role="img"
+            aria-label="Monthly simulated price percentiles compared with exact lognormal percentiles. Numeric values follow below."
+          ></canvas
+          ><label class="toggle"
+            ><input id="traces" type="checkbox" /> Overlay the first 12
+            generated paths, not selected winners</label
+          >
+          <p class="chart-note">
+            Pointwise central 90% ranges, not a 90% chance of staying inside the
+            band for the whole path. Monthly observations can miss movements
+            between observations.
+          </p>
+          <div class="stats" id="stats" aria-label="Terminal statistics"></div>
+          <p class="chart-note">
+            More paths reduce sampling noise within this model. They cannot fix
+            a wrong drift, volatility, or distribution. At high volatility and
+            long horizons, rare right-tail values can dominate the mean and make
+            its estimated standard error unstable.
+          </p>
+        </div>
+      </section>
+      <section class="lower">
+        <div>
+          <p class="eyebrow">03 / THE ENDPOINTS</p>
+          <h2>Where the sample lands.</h2>
+          <p>
+            Every simulated endpoint is included. Equal-width bins in
+            <strong>log price</strong>, so the horizontal spacing is
+            multiplicative, not linear.
+          </p>
+          <canvas
+            id="histogram"
+            height="280"
+            role="img"
+            aria-label="Histogram of terminal simulated prices on a logarithmic price axis. Terminal percentiles and sample size are listed above."
+          ></canvas>
+          <p id="hist-note" class="chart-note"></p>
+        </div>
+        <div>
+          <p class="eyebrow">04 / THE NUMERICAL ERROR</p>
+          <h2>Noise is not uncertainty.</h2>
+          <p>
+            Nested prefixes of this same sample. Monte Carlo standard error
+            (MCSE) estimates noise in the sample mean, not uncertainty about a
+            real stock's future price.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <caption>
+                Convergence of the terminal sample mean
+              </caption>
+              <thead>
+                <tr>
+                  <th>Paths</th>
+                  <th>Mean</th>
+                  <th>MCSE</th>
+                  <th>Absolute error*</th>
+                </tr>
+              </thead>
+              <tbody id="convergence"></tbody>
+            </table>
+          </div>
+          <p class="chart-note">
+            *Compared with the exact mean under these assumptions. Error need
+            not fall on every run. MCSE = sample standard deviation / √N.
+            Samples here are pseudorandom, not independent market histories.
+          </p>
+        </div>
+      </section>
+      <details id="numeric">
+        <summary>Monthly percentiles / accessible numeric view</summary>
+        <div class="table-wrap">
+          <table>
+            <caption>
+              Price units; simulated percentiles use linear interpolation at
+              (N-1)p
+            </caption>
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Sample P05</th>
+                <th>Sample P50</th>
+                <th>Sample P95</th>
+                <th>Exact P05</th>
+                <th>Exact P50</th>
+                <th>Exact P95</th>
+              </tr>
+            </thead>
+            <tbody id="monthly"></tbody>
+          </table>
+        </div>
+      </details>
+      <section class="method">
+        <div>
+          <p class="eyebrow">THE EQUATION</p>
+          <h2>Simple by design.</h2>
+          <p class="equation">S(t + Δt) = S(t) exp[(μ - σ²/2)Δt + σ√Δt Z]</p>
+          <p>
+            Z is standard normal; Δt = 1/12 year. This exact GBM transition
+            avoids Euler discretization error at the monthly observation times.
+            It does not make the model an exact description of a market.
+          </p>
+          <p>
+            Exact mean: S₀ exp(μT). Exact median: S₀ exp[(μ - σ²/2)T]. Higher
+            volatility lowers the median at fixed drift, but not the arithmetic
+            mean. No risk-neutral pricing is done here.
+          </p>
+        </div>
+        <div>
+          <p class="eyebrow">WHAT THE MODEL LEAVES OUT</p>
+          <h2>Know the glass.</h2>
+          <p>
+            Constant drift and volatility. Independent normal log increments. No
+            jumps, volatility clustering, changing regimes, dividends,
+            financing, inflation or trading costs. No bankruptcy: GBM stays
+            positive.
+          </p>
+          <p>
+            Inputs are assumptions, not estimates. A central range is not a
+            worst case, and a sample minimum is not a loss limit. No
+            recommendations, allocations or trades are made.
+          </p>
+          <p>
+            The portable Park-Miller generator and Box-Muller transform make
+            this teaching sample reproducible. They are not cryptographic or a
+            production risk engine. Small last-digit differences between
+            platforms are possible.
+          </p>
+        </div>
+      </section>
+      <section class="sources">
+        <p class="eyebrow">READ THE FOUNDATIONS</p>
+        <a
+          href="https://www.randomservices.org/random/brown/Geometric.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Random Services / GBM distribution and moments ↗</a
+        ><a
+          href="https://itl.nist.gov/div898/handbook/eda/section3/eda3669.htm"
+          target="_blank"
+          rel="noopener noreferrer"
+          >NIST / lognormal quantiles ↗</a
+        ><a
+          href="https://people.maths.ox.ac.uk/~gilesm/mc2013/lec1.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Mike Giles, Oxford / Monte Carlo error ↗</a
+        ><a
+          href="https://iopscience.iop.org/article/10.1088/1469-7688/1/2/304"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Rama Cont (2001) / what real returns do differently ↗</a
+        >
+      </section>
+    </main>
+    <footer>
+      <span>driftglass / educational scenarios, not investment advice</span
+      ><span>Original code: MIT OR Apache-2.0</span>
+    </footer>
+    <noscript
+      >This simulator needs JavaScript. The equation and model limits above
+      remain readable.</noscript
+    >
+  </body>
+</html>
