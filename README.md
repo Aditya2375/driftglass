@@ -1,5 +1,7 @@
 # driftglass
 
+[Live demo](https://aditya2375.github.io/driftglass/)
+
 A Java-first Monte Carlo stock-model lab. Simulate geometric Brownian motion, compare the sample with exact lognormal answers, and see why more paths do not mean a more trustworthy market model.
 
 No ticker, historical calibration, market feed, keys, accounts or trades. All inputs are assumptions. The browser computes locally with no requests or saved state.
